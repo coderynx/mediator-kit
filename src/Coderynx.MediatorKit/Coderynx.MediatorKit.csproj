@@ -5,7 +5,7 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <PackageId>Coderynx.MediatorKit</PackageId>
-        <Version>1.1.0</Version>
+        <Version>1.2.0</Version>
         <Authors>coderynx</Authors>
         <Description>Mediator library</Description>
         <PackageTags>mediator</PackageTags>
