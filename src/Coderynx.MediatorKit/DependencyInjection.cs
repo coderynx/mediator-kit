@@ -65,11 +65,11 @@ public class CqrsBuilder
 
 public static class DependencyInjection
 {
-    public static void AddMediatorKit(this IHostApplicationBuilder builder, Action<CqrsBuilder>? configure = null)
+    public static void AddMediatorKit(this IServiceCollection services, Action<CqrsBuilder>? configure = null)
     {
-        var cqrsBuilder = new CqrsBuilder(builder.Services);
+        var cqrsBuilder = new CqrsBuilder(services);
         configure?.Invoke(cqrsBuilder);
 
-        builder.Services.AddScoped<ISender, Sender>();
+        services.AddScoped<ISender, Sender>();
     }
 }

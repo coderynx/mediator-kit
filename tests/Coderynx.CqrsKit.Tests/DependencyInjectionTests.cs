@@ -11,7 +11,7 @@ namespace Coderynx.CqrsKit.Tests;
 public sealed class DependencyInjectionTests
 {
     [Fact]
-    public void AddCqrs_ShouldRegisterSender_WhenCalled()
+    public void AddMediatorKit_ShouldRegisterSender_WhenCalled()
     {
         // Arrange
         var services = new ServiceCollection();
@@ -19,7 +19,7 @@ public sealed class DependencyInjectionTests
         builder.Services.Returns(services);
 
         // Act
-        builder.AddMediatorKit();
+        builder.Services.AddMediatorKit();
 
         // Assert
         var serviceDescriptor = services.FirstOrDefault(s => s.ServiceType == typeof(ISender));
@@ -29,7 +29,7 @@ public sealed class DependencyInjectionTests
     }
 
     [Fact]
-    public void AddCqrs_ShouldExecuteConfigureAction_WhenProvided()
+    public void AddMediatorKit_ShouldExecuteConfigureAction_WhenProvided()
     {
         // Arrange
         var services = new ServiceCollection();
@@ -38,7 +38,7 @@ public sealed class DependencyInjectionTests
         var configureWasCalled = false;
 
         // Act
-        builder.AddMediatorKit(cqrsBuilder =>
+        builder.Services.AddMediatorKit(cqrsBuilder =>
         {
             configureWasCalled = true;
             Assert.NotNull(cqrsBuilder);
@@ -114,7 +114,7 @@ public sealed class DependencyInjectionTests
     }
 
     [Fact]
-    public void AddCommandHandlers_ShouldRegisterAllCommandHandlers()
+    public void AddHandlers_ShouldRegisterQueryAndCommandHandlers()
     {
         // Arrange
         var services = new ServiceCollection();
@@ -124,61 +124,39 @@ public sealed class DependencyInjectionTests
         cqrsBuilder.AddHandlers<TestCommandHandler>();
 
         // Assert
-        var serviceDescriptor = services.FirstOrDefault(s =>
-            s.ServiceType == typeof(ICommandHandler<TestCommand, Result<int>>));
-        Assert.NotNull(serviceDescriptor);
-        Assert.Equal(typeof(TestCommandHandler), serviceDescriptor.ImplementationType);
-        Assert.Equal(ServiceLifetime.Scoped, serviceDescriptor.Lifetime);
+        var commandHandler = services
+            .FirstOrDefault(s => s.ServiceType == typeof(ICommandHandler<TestCommand, Result<int>>));
+        Assert.NotNull(commandHandler);
+        Assert.Equal(typeof(TestCommandHandler), commandHandler.ImplementationType);
+        Assert.Equal(ServiceLifetime.Scoped, commandHandler.Lifetime);
+        
+        var queryHandler = services
+            .FirstOrDefault(s => s.ServiceType == typeof(IQueryHandler<TestQuery, Result<int>>));
+        Assert.NotNull(queryHandler);
+        Assert.Equal(typeof(TestQueryHandler), queryHandler.ImplementationType);
+        Assert.Equal(ServiceLifetime.Scoped, queryHandler.Lifetime);
     }
 
     [Fact]
-    public void AddQueryHandlers_ShouldRegisterAllQueryHandlers()
+    public async Task SendAsync_ShouldReturnResult()
     {
         // Arrange
         var services = new ServiceCollection();
-        var cqrsBuilder = new CqrsBuilder(services);
 
+        services.AddMediatorKit(mediator =>
+        {
+            mediator.AddHandlers<TestCommandHandler>();
+        });
+        
+        var provider = services.BuildServiceProvider();
+        var sender = provider.GetRequiredService<ISender>();
+        
         // Act
-        cqrsBuilder.AddHandlers<TestQueryHandler>();
-
+        var result = await sender.SendAsync(new TestCommand());
+        
         // Assert
-        var serviceDescriptor = services.FirstOrDefault(s =>
-            s.ServiceType == typeof(IQueryHandler<TestQuery, Result<int>>));
-        Assert.NotNull(serviceDescriptor);
-        Assert.Equal(typeof(TestQueryHandler), serviceDescriptor.ImplementationType);
-        Assert.Equal(ServiceLifetime.Scoped, serviceDescriptor.Lifetime);
-    }
-}
-
-public sealed class TestCommand : ICommand<Result<int>>;
-
-public sealed class TestQuery : IQuery<Result<int>>;
-
-public class TestPipelineBehavior<TCommand, TResult> : IPipelineBehavior<TCommand, TResult>
-    where TCommand : IRequest<TResult>
-    where TResult : Result
-{
-    public async Task<TResult> HandleAsync(
-        TCommand request,
-        RequestHandlerDelegate<TResult> next,
-        CancellationToken cancellationToken = default)
-    {
-        return await next();
-    }
-}
-
-public class TestCommandHandler : ICommandHandler<TestCommand, Result<int>>
-{
-    public Task<Result<int>> HandleAsync(TestCommand request, CancellationToken cancellationToken = default)
-    {
-        return Task.FromResult<Result<int>>(Success.Created(1));
-    }
-}
-
-public class TestQueryHandler : IQueryHandler<TestQuery, Result<int>>
-{
-    public Task<Result<int>> HandleAsync(TestQuery query, CancellationToken cancellationToken = default)
-    {
-        return Task.FromResult<Result<int>>(Success.Created(1));
+        Assert.True(result.IsSuccess);
+        Assert.Equal(SuccessKind.Created, result.Success.Kind);
+        Assert.Equal(1, result.Success.Value);
     }
 }

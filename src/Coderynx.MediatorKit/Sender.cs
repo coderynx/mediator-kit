@@ -10,52 +10,56 @@ internal sealed class Sender(IServiceProvider serviceProvider) : ISender
         IRequest<TResponse> request,
         CancellationToken cancellationToken = default) where TResponse : Result
     {
-        var type = request switch
+        ArgumentNullException.ThrowIfNull(request);
+
+        var handlerInterface = request switch
         {
             ICommand<TResponse> => typeof(ICommandHandler<,>),
             IQuery<TResponse> => typeof(IQueryHandler<,>),
-            _ => throw new ArgumentOutOfRangeException(nameof(request), request, null)
+            _ => throw new ArgumentOutOfRangeException(nameof(request),
+                $"Unknown request type: {request.GetType().Name}")
         };
 
-        var handlerType = type.MakeGenericType(request.GetType(), typeof(TResponse));
-
-        dynamic? handler = serviceProvider.GetService(handlerType);
-        if (handler is null)
-        {
-            throw new InvalidOperationException($"Handler for '{request.GetType().Name}' not found.");
-        }
-
         var requestType = request.GetType();
-        var behaviorInterfaces = new[]
+        var handlerType = handlerInterface.MakeGenericType(requestType, typeof(TResponse));
+        var handler = serviceProvider.GetService(handlerType) ??
+                      throw new InvalidOperationException($"Handler for '{requestType.Name}' not found.");
+
+        var handleMethod = handlerType.GetMethod("HandleAsync") ??
+                           throw new InvalidOperationException($"'{handlerType.Name}' does not implement HandleAsync.");
+
+        var pipelineBehaviorTypes = new List<Type>
         {
             typeof(IPipelineBehavior<,>).MakeGenericType(requestType, typeof(TResponse)),
-            typeof(IPipelineBehavior<IRequest<TResponse>, TResponse>),
-            request is ICommand<TResponse>
-                ? typeof(IPipelineBehavior<ICommand<TResponse>, TResponse>)
-                : null,
-            request is IQuery<TResponse>
-                ? typeof(IPipelineBehavior<IQuery<TResponse>, TResponse>)
-                : null
-        }.Where(t => t is not null).Cast<Type>();
+            typeof(IPipelineBehavior<IRequest<TResponse>, TResponse>)
+        };
 
-        var behaviors = behaviorInterfaces
+        switch (request)
+        {
+            case ICommand<TResponse>:
+                pipelineBehaviorTypes.Add(typeof(IPipelineBehavior<ICommand<TResponse>, TResponse>));
+                break;
+            case IQuery<TResponse>:
+                pipelineBehaviorTypes.Add(typeof(IPipelineBehavior<IQuery<TResponse>, TResponse>));
+                break;
+        }
+
+        var behaviors = pipelineBehaviorTypes
             .SelectMany(serviceProvider.GetServices)
             .Cast<object>()
             .ToList();
 
-        var initialDelegate = (RequestHandlerDelegate<TResponse>)(()
-            => handler.HandleAsync((dynamic)request, cancellationToken));
-
-        var pipelineDelegate = behaviors
+        var pipeline = behaviors
             .Reverse<object>()
-            .Aggregate(
-                initialDelegate,
-                (next, behavior) => () =>
-                {
-                    dynamic dynBehavior = behavior;
-                    return dynBehavior.HandleAsync((dynamic)request, next, cancellationToken);
-                });
+            .Aggregate((RequestHandlerDelegate<TResponse>)HandlerDelegate, (next, behavior) => () =>
+            {
+                dynamic dynBehavior = behavior;
+                return dynBehavior.HandleAsync((dynamic)request, next, cancellationToken);
+            });
 
-        return await pipelineDelegate();
+        return await pipeline();
+
+        Task<TResponse> HandlerDelegate() =>
+            (Task<TResponse>)handleMethod.Invoke(handler, [request, cancellationToken])!;
     }
 }
