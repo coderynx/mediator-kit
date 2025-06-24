@@ -3,56 +3,40 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Coderynx.MediatorKit;
 
-internal sealed class Sender(IServiceProvider serviceProvider) : ISender
+public sealed class Sender(IServiceProvider serviceProvider) : ISender
 {
-    public async Task<TResponse> SendAsync<TResponse>(
+    public Task<TResponse> SendAsync<TResponse>(
         IRequest<TResponse> request,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = new())
     {
-        ArgumentNullException.ThrowIfNull(request);
-
-        var handlerInterface = typeof(IRequestHandler<,>);
-
         var requestType = request.GetType();
-        var handlerType = handlerInterface.MakeGenericType(requestType, typeof(TResponse));
-        var handler = serviceProvider.GetService(handlerType) ??
-                      throw new InvalidOperationException($"Handler for request type '{requestType.Name}' not found.");
+        var handlerType = typeof(IRequestHandler<,>).MakeGenericType(requestType, typeof(TResponse));
+        var handler = serviceProvider.GetService(handlerType);
 
-        var handleMethod = handlerType.GetMethod("HandleAsync") ??
-                           throw new InvalidOperationException($"'{handlerType.Name}' does not implement HandleAsync.");
-
-        var pipelineBehaviorTypes = new List<Type>
+        if (handler is null)
         {
-            typeof(IPipelineBehavior<,>).MakeGenericType(requestType, typeof(TResponse)),
-            typeof(IPipelineBehavior<IRequest<TResponse>, TResponse>)
-        };
+            throw new InvalidOperationException($"No handler found for request of type '{requestType}'");
+        }
 
-        var behaviors = pipelineBehaviorTypes
-            .SelectMany(type => (IEnumerable<object>)serviceProvider.GetServices(type))
+        RequestHandlerDelegate<TResponse> handlerDelegate = () =>
+            (Task<TResponse>)handlerType
+                .GetMethod("HandleAsync")!
+                .Invoke(handler, [request, cancellationToken])!;
+
+        var behaviorType = typeof(IPipelineBehavior<,>).MakeGenericType(requestType, typeof(TResponse));
+        var behaviors = serviceProvider
+            .GetServices(behaviorType)
+            .Reverse()
             .ToList();
 
-        foreach (var behavior in from behavior in behaviors
-                 let method = behavior.GetType().GetMethod("HandleAsync")
-                 where method is null
-                 select behavior)
+        foreach (var behavior in behaviors)
         {
-            throw new InvalidOperationException(
-                $"Pipeline behavior {behavior.GetType().Name} does not implement HandleAsync.");
+            var next = handlerDelegate;
+            handlerDelegate = () => (Task<TResponse>)behaviorType
+                .GetMethod("HandleAsync")!
+                .Invoke(behavior, [request, next, cancellationToken])!;
         }
 
-        var pipeline = behaviors
-            .Reverse<object>()
-            .Aggregate((RequestHandlerDelegate<TResponse>)HandlerDelegate, (next, behavior) => () =>
-            {
-                dynamic dynBehavior = behavior;
-                return dynBehavior.HandleAsync((dynamic)request, next, cancellationToken);
-            });
-
-        return await pipeline();
-
-        Task<TResponse> HandlerDelegate()
-        {
-            return (Task<TResponse>)handleMethod.Invoke(handler, [request, cancellationToken])!;
-        }
+        return handlerDelegate();
     }
 }

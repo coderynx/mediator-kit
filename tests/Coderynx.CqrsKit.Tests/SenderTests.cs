@@ -38,10 +38,8 @@ public class SenderTests
         var sender = new Sender(emptyProvider);
 
         // Act & Assert
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            sender.SendAsync(new TestRequest()));
-
-        Assert.Contains("Handler for request type 'TestRequest' not found", ex.Message);
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => sender.SendAsync(new TestRequest()));
+        Assert.Contains("No handler found for request of type 'Coderynx.CqrsKit.Tests.TestRequest'", ex.Message);
     }
 
     [Fact]
@@ -50,7 +48,7 @@ public class SenderTests
         // Arrange
         var services = new ServiceCollection();
         services.AddTransient<IRequestHandler<TestRequest, int>, TestRequestHandler>();
-        services.AddSingleton<IPipelineBehavior<IRequest<int>, int>, TrackingBehavior>();
+        services.AddSingleton(typeof(IPipelineBehavior<,>), typeof(TrackingBehavior<,>));
 
         var provider = services.BuildServiceProvider();
         var sender = new Sender(provider);
@@ -60,7 +58,7 @@ public class SenderTests
 
         // Assert
         Assert.Equal(1, result);
-        Assert.True(TrackingBehavior.WasCalled);
+        Assert.True(TrackingBehavior<TestRequest, int>.WasCalled);
     }
 
     [Fact]

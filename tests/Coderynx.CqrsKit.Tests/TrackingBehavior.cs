@@ -2,14 +2,13 @@ using Coderynx.MediatorKit.Abstractions;
 
 namespace Coderynx.CqrsKit.Tests;
 
-public class TrackingBehavior : IPipelineBehavior<IRequest<int>, int>
+public class TrackingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
+    where TRequest : IRequest<TResponse>
 {
     public static bool WasCalled { get; private set; }
 
-    public Task<int> HandleAsync(
-        IRequest<int> request,
-        RequestHandlerDelegate<int> next,
-        CancellationToken cancellationToken = default)
+    public Task<TResponse> HandleAsync(TRequest request, RequestHandlerDelegate<TResponse> next,
+        CancellationToken cancellationToken = new())
     {
         WasCalled = true;
         return next();

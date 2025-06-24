@@ -22,40 +22,34 @@ public class MediatorKitBuilder
 
     public MediatorKitBuilder AddPipelineBehavior(Type behaviorType)
     {
-        if (!behaviorType.IsGenericType)
+        if (!behaviorType.IsGenericTypeDefinition)
         {
-            throw new ArgumentException("Behavior type must be generic", nameof(behaviorType));
+            throw new ArgumentException("Behavior must be an open generic type, e.g. typeof(LoggingBehavior<,>)");
         }
 
-        var genericTypeDefinition = behaviorType.GetGenericTypeDefinition();
-        var interfaceType = typeof(IPipelineBehavior<,>);
-
-        var behaviorTypes = !genericTypeDefinition.GetInterfaces()
-            .Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == interfaceType);
-
-        if (behaviorTypes)
+        if (!behaviorType.GetInterfaces()
+                .Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IPipelineBehavior<,>)))
         {
-            throw new ArgumentException("Behavior type must implement IPipelineBehavior<,>", nameof(behaviorType));
+            throw new ArgumentException("Behavior type must implement IPipelineBehavior<,> (Parameter 'behaviorType')");
         }
 
-        Services.AddScoped(interfaceType, behaviorType);
+        Services.AddScoped(typeof(IPipelineBehavior<,>), behaviorType);
         return this;
     }
 
     public void AddHandlers<T>()
     {
         var assembly = typeof(T).Assembly;
-        var types = assembly.GetTypes().Where(t => t is { IsClass: true, IsAbstract: false });
+        var handlerInterface = typeof(IRequestHandler<,>);
 
-        foreach (var type in types)
+        var handlers = assembly.GetTypes()
+            .Where(t => t is { IsAbstract: false, IsInterface: false })
+            .SelectMany(t => t.GetInterfaces(), (t, i) => new { Type = t, Interface = i })
+            .Where(t => t.Interface.IsGenericType && t.Interface.GetGenericTypeDefinition() == handlerInterface);
+
+        foreach (var handler in handlers)
         {
-            var interfaces = type.GetInterfaces()
-                .Where(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IRequestHandler<,>));
-
-            foreach (var @interface in interfaces)
-            {
-                Services.AddScoped(@interface, type);
-            }
+            Services.AddScoped(handler.Interface, handler.Type);
         }
     }
 }

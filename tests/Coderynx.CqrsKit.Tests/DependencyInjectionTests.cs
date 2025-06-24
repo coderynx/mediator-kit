@@ -94,7 +94,7 @@ public sealed class DependencyInjectionTests
         // Act & Assert
         var exception = Assert.Throws<ArgumentException>(() =>
             cqrsBuilder.AddPipelineBehavior(nonGenericType));
-        Assert.Equal("Behavior type must be generic (Parameter 'behaviorType')", exception.Message);
+        Assert.Equal("Behavior must be an open generic type, e.g. typeof(LoggingBehavior<,>)", exception.Message);
     }
 
     [Fact]
@@ -106,8 +106,7 @@ public sealed class DependencyInjectionTests
         var invalidType = typeof(List<>);
 
         // Act & Assert
-        var exception = Assert.Throws<ArgumentException>(() =>
-            cqrsBuilder.AddPipelineBehavior(invalidType));
+        var exception = Assert.Throws<ArgumentException>(() => cqrsBuilder.AddPipelineBehavior(invalidType));
         Assert.Equal("Behavior type must implement IPipelineBehavior<,> (Parameter 'behaviorType')", exception.Message);
     }
 
