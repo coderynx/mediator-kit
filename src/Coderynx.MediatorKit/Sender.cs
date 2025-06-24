@@ -45,9 +45,17 @@ internal sealed class Sender(IServiceProvider serviceProvider) : ISender
         }
 
         var behaviors = pipelineBehaviorTypes
-            .SelectMany(serviceProvider.GetServices)
-            .Cast<object>()
+            .SelectMany(type => (IEnumerable<object>)serviceProvider.GetServices(type))
             .ToList();
+
+        foreach (var behavior in from behavior in behaviors
+                 let method = behavior.GetType().GetMethod("HandleAsync")
+                 where method is null
+                 select behavior)
+        {
+            throw new InvalidOperationException(
+                $"Pipeline behavior {behavior.GetType().Name} does not implement HandleAsync.");
+        }
 
         var pipeline = behaviors
             .Reverse<object>()
