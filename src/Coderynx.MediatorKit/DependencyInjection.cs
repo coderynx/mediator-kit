@@ -43,34 +43,17 @@ public class CqrsBuilder
         return this;
     }
 
-    public void AddCommandHandlers<T>()
+    public void AddHandlers<T>()
     {
-        var asm = typeof(T).Assembly;
-
-        var types = asm.GetTypes().Where(t => t is { IsClass: true, IsAbstract: false });
+        var assembly = typeof(T).Assembly;
+        var types = assembly.GetTypes().Where(t => t is { IsClass: true, IsAbstract: false });
 
         foreach (var type in types)
         {
             var interfaces = type.GetInterfaces()
-                .Where(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ICommandHandler<,>));
-
-            foreach (var @interface in interfaces)
-            {
-                Services.AddScoped(@interface, type);
-            }
-        }
-    }
-
-    public void AddQueryHandlers<T>()
-    {
-        var asm = typeof(T).Assembly;
-
-        var types = asm.GetTypes().Where(t => t is { IsClass: true, IsAbstract: false });
-
-        foreach (var type in types)
-        {
-            var interfaces = type.GetInterfaces()
-                .Where(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IQueryHandler<,>));
+                .Where(i => i.IsGenericType &&
+                            (i.GetGenericTypeDefinition() == typeof(ICommandHandler<,>) ||
+                             i.GetGenericTypeDefinition() == typeof(IQueryHandler<,>)));
 
             foreach (var @interface in interfaces)
             {
@@ -82,7 +65,7 @@ public class CqrsBuilder
 
 public static class DependencyInjection
 {
-    public static void AddCqrs(this IHostApplicationBuilder builder, Action<CqrsBuilder>? configure = null)
+    public static void AddMediatorKit(this IHostApplicationBuilder builder, Action<CqrsBuilder>? configure = null)
     {
         var cqrsBuilder = new CqrsBuilder(builder.Services);
         configure?.Invoke(cqrsBuilder);

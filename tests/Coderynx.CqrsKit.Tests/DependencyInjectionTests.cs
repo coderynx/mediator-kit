@@ -19,7 +19,7 @@ public sealed class DependencyInjectionTests
         builder.Services.Returns(services);
 
         // Act
-        builder.AddCqrs();
+        builder.AddMediatorKit();
 
         // Assert
         var serviceDescriptor = services.FirstOrDefault(s => s.ServiceType == typeof(ISender));
@@ -38,7 +38,7 @@ public sealed class DependencyInjectionTests
         var configureWasCalled = false;
 
         // Act
-        builder.AddCqrs(cqrsBuilder =>
+        builder.AddMediatorKit(cqrsBuilder =>
         {
             configureWasCalled = true;
             Assert.NotNull(cqrsBuilder);
@@ -121,7 +121,7 @@ public sealed class DependencyInjectionTests
         var cqrsBuilder = new CqrsBuilder(services);
 
         // Act
-        cqrsBuilder.AddCommandHandlers<TestCommandHandler>();
+        cqrsBuilder.AddHandlers<TestCommandHandler>();
 
         // Assert
         var serviceDescriptor = services.FirstOrDefault(s =>
@@ -139,7 +139,7 @@ public sealed class DependencyInjectionTests
         var cqrsBuilder = new CqrsBuilder(services);
 
         // Act
-        cqrsBuilder.AddQueryHandlers<TestQueryHandler>();
+        cqrsBuilder.AddHandlers<TestQueryHandler>();
 
         // Assert
         var serviceDescriptor = services.FirstOrDefault(s =>
