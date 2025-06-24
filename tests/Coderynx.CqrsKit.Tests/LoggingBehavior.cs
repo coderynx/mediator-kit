@@ -1,11 +1,10 @@
-using Coderynx.Functional.Results;
 using Coderynx.MediatorKit.Abstractions;
 
 namespace Coderynx.CqrsKit.Tests;
 
-public sealed class LoggingBehavior : IPipelineBehavior<IRequest<Result>, Result>
+public sealed class LoggingBehavior : IPipelineBehavior<IRequest<int>, int>
 {
-    public async Task<Result> HandleAsync(IRequest<Result> request, RequestHandlerDelegate<Result> next,
+    public async Task<int> HandleAsync(IRequest<int> request, RequestHandlerDelegate<int> next,
         CancellationToken cancellationToken)
     {
         return await next();

@@ -1,5 +1,3 @@
-using Coderynx.Functional.Results;
-using Coderynx.Functional.Results.Successes;
 using Coderynx.MediatorKit;
 using Coderynx.MediatorKit.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
@@ -53,16 +51,16 @@ public sealed class DependencyInjectionTests
     {
         // Arrange
         var services = new ServiceCollection();
-        var cqrsBuilder = new CqrsBuilder(services);
+        var cqrsBuilder = new MediatorKitBuilder(services);
 
         // Act
-        cqrsBuilder.AddPipelineBehavior<TestPipelineBehavior<TestCommand, Result<int>>, TestCommand, Result<int>>();
+        cqrsBuilder.AddPipelineBehavior<TestPipelineBehavior<TestRequest, int>, TestRequest, int>();
 
         // Assert
         var serviceDescriptor = services.FirstOrDefault(s =>
-            s.ServiceType == typeof(IPipelineBehavior<TestCommand, Result<int>>));
+            s.ServiceType == typeof(IPipelineBehavior<TestRequest, int>));
         Assert.NotNull(serviceDescriptor);
-        Assert.Equal(typeof(TestPipelineBehavior<TestCommand, Result<int>>), serviceDescriptor.ImplementationType);
+        Assert.Equal(typeof(TestPipelineBehavior<TestRequest, int>), serviceDescriptor.ImplementationType);
         Assert.Equal(ServiceLifetime.Scoped, serviceDescriptor.Lifetime);
     }
 
@@ -71,7 +69,7 @@ public sealed class DependencyInjectionTests
     {
         // Arrange
         var services = new ServiceCollection();
-        var cqrsBuilder = new CqrsBuilder(services);
+        var cqrsBuilder = new MediatorKitBuilder(services);
         var behaviorType = typeof(TestPipelineBehavior<,>);
 
         // Act
@@ -90,7 +88,7 @@ public sealed class DependencyInjectionTests
     {
         // Arrange
         var services = new ServiceCollection();
-        var cqrsBuilder = new CqrsBuilder(services);
+        var cqrsBuilder = new MediatorKitBuilder(services);
         var nonGenericType = typeof(string);
 
         // Act & Assert
@@ -104,7 +102,7 @@ public sealed class DependencyInjectionTests
     {
         // Arrange
         var services = new ServiceCollection();
-        var cqrsBuilder = new CqrsBuilder(services);
+        var cqrsBuilder = new MediatorKitBuilder(services);
         var invalidType = typeof(List<>);
 
         // Act & Assert
@@ -114,27 +112,21 @@ public sealed class DependencyInjectionTests
     }
 
     [Fact]
-    public void AddHandlers_ShouldRegisterQueryAndCommandHandlers()
+    public void AddHandlers_ShouldRegisterRequestHandlers()
     {
         // Arrange
         var services = new ServiceCollection();
-        var cqrsBuilder = new CqrsBuilder(services);
+        var cqrsBuilder = new MediatorKitBuilder(services);
 
         // Act
-        cqrsBuilder.AddHandlers<TestCommandHandler>();
+        cqrsBuilder.AddHandlers<TestRequestHandler>();
 
         // Assert
-        var commandHandler = services
-            .FirstOrDefault(s => s.ServiceType == typeof(ICommandHandler<TestCommand, Result<int>>));
-        Assert.NotNull(commandHandler);
-        Assert.Equal(typeof(TestCommandHandler), commandHandler.ImplementationType);
-        Assert.Equal(ServiceLifetime.Scoped, commandHandler.Lifetime);
-        
-        var queryHandler = services
-            .FirstOrDefault(s => s.ServiceType == typeof(IQueryHandler<TestQuery, Result<int>>));
-        Assert.NotNull(queryHandler);
-        Assert.Equal(typeof(TestQueryHandler), queryHandler.ImplementationType);
-        Assert.Equal(ServiceLifetime.Scoped, queryHandler.Lifetime);
+        var requestHandler = services
+            .FirstOrDefault(s => s.ServiceType == typeof(IRequestHandler<TestRequest, int>));
+        Assert.NotNull(requestHandler);
+        Assert.Equal(typeof(TestRequestHandler), requestHandler.ImplementationType);
+        Assert.Equal(ServiceLifetime.Scoped, requestHandler.Lifetime);
     }
 
     [Fact]
@@ -143,20 +135,15 @@ public sealed class DependencyInjectionTests
         // Arrange
         var services = new ServiceCollection();
 
-        services.AddMediatorKit(mediator =>
-        {
-            mediator.AddHandlers<TestCommandHandler>();
-        });
-        
+        services.AddMediatorKit(mediator => { mediator.AddHandlers<TestRequestHandler>(); });
+
         var provider = services.BuildServiceProvider();
         var sender = provider.GetRequiredService<ISender>();
-        
+
         // Act
-        var result = await sender.SendAsync(new TestCommand());
-        
+        var result = await sender.SendAsync(new TestRequest());
+
         // Assert
-        Assert.True(result.IsSuccess);
-        Assert.Equal(SuccessKind.Created, result.Success.Kind);
-        Assert.Equal(1, result.Success.Value);
+        Assert.Equal(1, result);
     }
 }

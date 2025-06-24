@@ -1,4 +1,3 @@
-using Coderynx.Functional.Results;
 using Coderynx.MediatorKit;
 using Coderynx.MediatorKit.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,39 +11,23 @@ public class SenderTests
     public SenderTests()
     {
         var services = new ServiceCollection();
-        services.AddTransient<ICommandHandler<TestCommand, Result<int>>, TestCommandHandler>();
-        services.AddTransient<IQueryHandler<TestQuery, Result<int>>, TestQueryHandler>();
-        services.AddTransient<IPipelineBehavior<IRequest<Result>, Result>, LoggingBehavior>();
+        services.AddTransient<IRequestHandler<TestRequest, int>, TestRequestHandler>();
+        services.AddTransient<IPipelineBehavior<IRequest<int>, int>, LoggingBehavior>();
 
         _provider = services.BuildServiceProvider();
     }
 
     [Fact]
-    public async Task SendAsync_Command_ReturnsSuccessResult()
+    public async Task SendAsync_ReturnsSuccessResult()
     {
         // Arrange
         var sender = new Sender(_provider);
 
         // Act
-        var result = await sender.SendAsync(new TestCommand());
+        var result = await sender.SendAsync(new TestRequest());
 
         // Assert
-        Assert.True(result.IsSuccess);
-        Assert.Equal(1, result.Success.Value);
-    }
-
-    [Fact]
-    public async Task SendAsync_Query_ReturnsSuccessResult()
-    {
-        // Arrange
-        var sender = new Sender(_provider);
-
-        // Act
-        var result = await sender.SendAsync(new TestQuery());
-
-        // Assert
-        Assert.True(result.IsSuccess);
-        Assert.Equal(1, result.Success.Value);
+        Assert.Equal(1, result);
     }
 
     [Fact]
@@ -56,9 +39,9 @@ public class SenderTests
 
         // Act & Assert
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            sender.SendAsync(new TestCommand()));
+            sender.SendAsync(new TestRequest()));
 
-        Assert.Contains("Handler for 'TestCommand' not found", ex.Message);
+        Assert.Contains("Handler for request type 'TestRequest' not found", ex.Message);
     }
 
     [Fact]
@@ -66,18 +49,17 @@ public class SenderTests
     {
         // Arrange
         var services = new ServiceCollection();
-        services.AddTransient<ICommandHandler<TestCommand, Result<int>>, TestCommandHandler>();
-        services.AddSingleton<IPipelineBehavior<IRequest<Result<int>>, Result<int>>, TrackingBehavior>();
+        services.AddTransient<IRequestHandler<TestRequest, int>, TestRequestHandler>();
+        services.AddSingleton<IPipelineBehavior<IRequest<int>, int>, TrackingBehavior>();
 
         var provider = services.BuildServiceProvider();
         var sender = new Sender(provider);
 
         // Act
-        var result = await sender.SendAsync(new TestCommand());
+        var result = await sender.SendAsync(new TestRequest());
 
         // Assert
-        Assert.True(result.IsSuccess);
-        Assert.Equal(1, result.Success.Value);
+        Assert.Equal(1, result);
         Assert.True(TrackingBehavior.WasCalled);
     }
 
@@ -86,18 +68,17 @@ public class SenderTests
     {
         // Arrange
         var services = new ServiceCollection();
-        services.AddTransient<ICommandHandler<TestCommand, Result<int>>, TestCommandHandler>();
+        services.AddTransient<IRequestHandler<TestRequest, int>, TestRequestHandler>();
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(GenericTrackingBehavior<,>));
 
         var provider = services.BuildServiceProvider();
         var sender = new Sender(provider);
 
         // Act
-        var result = await sender.SendAsync(new TestCommand());
+        var result = await sender.SendAsync(new TestRequest());
 
         // Assert
-        Assert.True(result.IsSuccess);
-        Assert.Equal(1, result.Success.Value);
-        Assert.True(GenericTrackingBehavior<TestCommand, Result<int>>.WasCalled);
+        Assert.Equal(1, result);
+        Assert.True(GenericTrackingBehavior<TestRequest, int>.WasCalled);
     }
 }

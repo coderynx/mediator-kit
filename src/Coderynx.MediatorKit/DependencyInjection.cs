@@ -1,19 +1,18 @@
 using Coderynx.MediatorKit.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 
 namespace Coderynx.MediatorKit;
 
-public class CqrsBuilder
+public class MediatorKitBuilder
 {
-    internal CqrsBuilder(IServiceCollection services)
+    internal MediatorKitBuilder(IServiceCollection services)
     {
         Services = services;
     }
 
     internal IServiceCollection Services { get; }
 
-    public CqrsBuilder AddPipelineBehavior<TPipelineBehavior, TRequest, TResponse>()
+    public MediatorKitBuilder AddPipelineBehavior<TPipelineBehavior, TRequest, TResponse>()
         where TPipelineBehavior : class, IPipelineBehavior<TRequest, TResponse>
         where TRequest : IRequest<TResponse>
     {
@@ -21,7 +20,7 @@ public class CqrsBuilder
         return this;
     }
 
-    public CqrsBuilder AddPipelineBehavior(Type behaviorType)
+    public MediatorKitBuilder AddPipelineBehavior(Type behaviorType)
     {
         if (!behaviorType.IsGenericType)
         {
@@ -51,9 +50,7 @@ public class CqrsBuilder
         foreach (var type in types)
         {
             var interfaces = type.GetInterfaces()
-                .Where(i => i.IsGenericType &&
-                            (i.GetGenericTypeDefinition() == typeof(ICommandHandler<,>) ||
-                             i.GetGenericTypeDefinition() == typeof(IQueryHandler<,>)));
+                .Where(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IRequestHandler<,>));
 
             foreach (var @interface in interfaces)
             {
@@ -65,9 +62,9 @@ public class CqrsBuilder
 
 public static class DependencyInjection
 {
-    public static void AddMediatorKit(this IServiceCollection services, Action<CqrsBuilder>? configure = null)
+    public static void AddMediatorKit(this IServiceCollection services, Action<MediatorKitBuilder>? configure = null)
     {
-        var cqrsBuilder = new CqrsBuilder(services);
+        var cqrsBuilder = new MediatorKitBuilder(services);
         configure?.Invoke(cqrsBuilder);
 
         services.AddScoped<ISender, Sender>();

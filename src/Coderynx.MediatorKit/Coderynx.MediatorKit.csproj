@@ -24,8 +24,11 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Coderynx.MediatorKit.Abstractions" Version="1.0.1"/>
         <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.6"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Coderynx.MediatorKit.Abstractions\Coderynx.MediatorKit.Abstractions.csproj"/>
     </ItemGroup>
 
 </Project>
