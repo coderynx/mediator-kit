@@ -5,7 +5,7 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <PackageId>Coderynx.MediatorKit</PackageId>
-        <Version>1.2.1</Version>
+        <Version>1.3.0</Version>
         <Authors>coderynx</Authors>
         <Description>Mediator library</Description>
         <PackageTags>mediator</PackageTags>
@@ -24,11 +24,8 @@
     </ItemGroup>
 
     <ItemGroup>
+        <PackageReference Include="Coderynx.MediatorKit.Abstractions" Version="1.2.0" />
         <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.6"/>
-    </ItemGroup>
-
-    <ItemGroup>
-        <ProjectReference Include="..\Coderynx.MediatorKit.Abstractions\Coderynx.MediatorKit.Abstractions.csproj"/>
     </ItemGroup>
 
 </Project>
