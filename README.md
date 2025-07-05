@@ -3,7 +3,7 @@
 ## Introduction
 
 **Coderynx.MediatorKit** is a lightweight, extensible mediator library for .NET applications. It simplifies the
-communication between components through strongly-typed requests and notifications, promoting clean architecture and
+communication between components through strongly-typed requests, promoting clean architecture and
 reducing tight coupling.
 
 ## Features
