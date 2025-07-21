@@ -182,7 +182,6 @@ dotnet pack --configuration Release --verbosity normal
 - Removed hardcoded version numbers from `.csproj` files
 - Added GitVersioning package reference in `Directory.Build.props`
 - Updated workflows for security and automation
-- Changed from .NET 9.0 to .NET 8.0 for compatibility
 
 ### Breaking Changes
 
