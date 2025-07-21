@@ -21,22 +21,11 @@ jobs:
       with:
         dotnet-version: '9.0.x'
         
-    - name: Restore dependencies
-      run: dotnet restore src/Coderynx.MediatorKit.Abstractions/Coderynx.MediatorKit.Abstractions.csproj
-      
-    - name: Restore dependencies
-      run: dotnet restore src/Coderynx.MediatorKit/Coderynx.MediatorKit.csproj
-      
-    - name: Restore test dependencies
-      run: dotnet restore tests/Coderynx.CqrsKit.Tests/Coderynx.CqrsKit.Tests.csproj
-      
     - name: Build
-      run: |
-        dotnet build src/Coderynx.MediatorKit.Abstractions/Coderynx.MediatorKit.Abstractions.csproj --configuration Release --no-restore
-        dotnet build src/Coderynx.MediatorKit/Coderynx.MediatorKit.csproj --configuration Release --no-restore
+      run: dotnet build --configuration Release --no-restore
         
     - name: Test
-      run: dotnet test tests/Coderynx.CqrsKit.Tests/Coderynx.CqrsKit.Tests.csproj --configuration Release --no-build --verbosity normal
+      run: dotnet test --configuration Release --no-build --verbosity normal
       
     - name: Get version
       id: version
