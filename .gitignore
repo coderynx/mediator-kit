@@ -32,3 +32,11 @@ _UpgradeReport_Files/
 Thumbs.db
 Desktop.ini
 .DS_Store
+
+# Build artifacts
+nupkg/
+*.nupkg
+*.snupkg
+
+# Release artifacts
+release-notes.md

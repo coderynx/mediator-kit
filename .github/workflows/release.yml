@@ -1,0 +1,96 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., v1.4.0)'
+        required: true
+        type: string
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      semver: ${{ steps.version.outputs.semver }}
+      
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Required for GitVersioning
+        
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+        
+    - name: Install GitVersioning
+      run: dotnet tool install --global nbgv
+      
+    - name: Get version
+      id: version
+      run: |
+        if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+          echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          echo "semver=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+        else
+          echo "version=$(nbgv get-version -v NuGetPackageVersion)" >> $GITHUB_OUTPUT
+          echo "semver=$(nbgv get-version -v SemVer2)" >> $GITHUB_OUTPUT
+        fi
+        
+    - name: Restore dependencies
+      run: |
+        dotnet restore src/Coderynx.MediatorKit.Abstractions/Coderynx.MediatorKit.Abstractions.csproj
+        dotnet restore src/Coderynx.MediatorKit/Coderynx.MediatorKit.csproj
+        dotnet restore tests/Coderynx.CqrsKit.Tests/Coderynx.CqrsKit.Tests.csproj
+        
+    - name: Build
+      run: |
+        dotnet build src/Coderynx.MediatorKit.Abstractions/Coderynx.MediatorKit.Abstractions.csproj --configuration Release --no-restore
+        dotnet build src/Coderynx.MediatorKit/Coderynx.MediatorKit.csproj --configuration Release --no-restore
+        
+    - name: Test
+      run: dotnet test tests/Coderynx.CqrsKit.Tests/Coderynx.CqrsKit.Tests.csproj --configuration Release --no-build --verbosity normal
+      
+    - name: Pack
+      run: |
+        dotnet pack src/Coderynx.MediatorKit.Abstractions/Coderynx.MediatorKit.Abstractions.csproj --configuration Release --no-build --output ./nupkg
+        dotnet pack src/Coderynx.MediatorKit/Coderynx.MediatorKit.csproj --configuration Release --no-build --output ./nupkg
+        
+    - name: Generate changelog
+      id: changelog
+      run: |
+        if [ -f CHANGELOG.md ]; then
+          # Extract changelog for this version
+          awk "/^## \[?${{ steps.version.outputs.semver }}\]?/{flag=1; next} /^## /{flag=0} flag" CHANGELOG.md > release-notes.md
+        else
+          echo "## Changes in ${{ steps.version.outputs.semver }}" > release-notes.md
+          echo "" >> release-notes.md
+          git log --pretty=format:"- %s" $(git describe --tags --abbrev=0 HEAD~1)..HEAD >> release-notes.md || echo "- Initial release" >> release-notes.md
+        fi
+        
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ github.ref_name || steps.version.outputs.semver }}
+        name: Release ${{ steps.version.outputs.semver }}
+        body_path: release-notes.md
+        files: |
+          ./nupkg/*.nupkg
+          ./nupkg/*.snupkg
+        draft: false
+        prerelease: ${{ contains(steps.version.outputs.version, '-') }}
+        
+    - name: Publish to NuGet
+      run: dotnet nuget push ./nupkg/*.nupkg -k ${{ secrets.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json --skip-duplicate
+      
+    - name: Upload packages as artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: release-packages-${{ steps.version.outputs.version }}
+        path: ./nupkg/*

@@ -5,7 +5,6 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <PackageId>Coderynx.MediatorKit.Abstractions</PackageId>
-        <Version>1.2.0</Version>
         <Authors>coderynx</Authors>
         <Description>MediatorKit library abstractions</Description>
         <PackageTags>mediator</PackageTags>
