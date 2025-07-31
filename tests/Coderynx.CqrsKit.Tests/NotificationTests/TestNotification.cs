@@ -6,7 +6,7 @@ public sealed record TestNotification : INotification;
 
 public class TestNotificationHandler : INotificationHandler<TestNotification>
 {
-    public Task HandleAsync(TestNotification request, CancellationToken cancellationToken = default)
+    public Task HandleAsync(TestNotification notification, CancellationToken cancellationToken = default)
     {
         return Task.CompletedTask;
     }
