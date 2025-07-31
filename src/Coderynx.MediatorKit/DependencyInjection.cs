@@ -27,8 +27,10 @@ public class MediatorKitBuilder
             throw new ArgumentException("Behavior must be an open generic type, e.g. typeof(LoggingBehavior<,>)");
         }
 
-        if (!behaviorType.GetInterfaces()
-                .Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IRequestPipelineBehavior<,>)))
+        var isInvalidBehavior = !behaviorType.GetInterfaces()
+            .Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IRequestPipelineBehavior<,>));
+        
+        if (isInvalidBehavior)
         {
             throw new ArgumentException("Behavior type must implement IPipelineBehavior<,> (Parameter 'behaviorType')");
         }
@@ -68,10 +70,10 @@ public class MediatorKitBuilder
             throw new ArgumentException("Behavior must be an open generic type, e.g. typeof(LoggingBehavior<>)");
         }
 
-        var isValidBehavior = !behaviorType.GetInterfaces()
+        var isInvalidBehavior = !behaviorType.GetInterfaces()
             .Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(INotificationPipelineBehavior<>));
 
-        if (isValidBehavior)
+        if (isInvalidBehavior)
         {
             throw new ArgumentException(
                 "Behavior type must implement INotificationPipelineBehavior<> (Parameter 'behaviorType')");
