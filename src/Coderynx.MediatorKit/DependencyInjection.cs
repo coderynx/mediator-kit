@@ -32,7 +32,8 @@ public class MediatorKitBuilder
         
         if (isInvalidBehavior)
         {
-            throw new ArgumentException("Behavior type must implement IPipelineBehavior<,> (Parameter 'behaviorType')");
+            throw new ArgumentException(
+                "Behavior type must implement IRequestPipelineBehavior<,> (Parameter 'behaviorType')");
         }
 
         Services.AddScoped(typeof(IRequestPipelineBehavior<,>), behaviorType);

@@ -107,7 +107,9 @@ public sealed class DependencyInjectionTests
 
         // Act & Assert
         var exception = Assert.Throws<ArgumentException>(() => cqrsBuilder.AddRequestPipelineBehavior(invalidType));
-        Assert.Equal("Behavior type must implement IPipelineBehavior<,> (Parameter 'behaviorType')", exception.Message);
+        Assert.Equal(
+            "Behavior type must implement IRequestPipelineBehavior<,> (Parameter 'behaviorType')",
+            exception.Message);
     }
 
     [Fact]
