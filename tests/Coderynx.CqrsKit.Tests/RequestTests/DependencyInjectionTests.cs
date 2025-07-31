@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using NSubstitute;
 
-namespace Coderynx.CqrsKit.Tests;
+namespace Coderynx.CqrsKit.Tests.RequestTests;
 
 public sealed class DependencyInjectionTests
 {
@@ -54,13 +54,13 @@ public sealed class DependencyInjectionTests
         var cqrsBuilder = new MediatorKitBuilder(services);
 
         // Act
-        cqrsBuilder.AddPipelineBehavior<TestPipelineBehavior<TestRequest, int>, TestRequest, int>();
+        cqrsBuilder.AddRequestPipelineBehavior<TestRequestPipelineBehavior<TestRequest, int>, TestRequest, int>();
 
         // Assert
         var serviceDescriptor = services.FirstOrDefault(s =>
-            s.ServiceType == typeof(IPipelineBehavior<TestRequest, int>));
+            s.ServiceType == typeof(IRequestPipelineBehavior<TestRequest, int>));
         Assert.NotNull(serviceDescriptor);
-        Assert.Equal(typeof(TestPipelineBehavior<TestRequest, int>), serviceDescriptor.ImplementationType);
+        Assert.Equal(typeof(TestRequestPipelineBehavior<TestRequest, int>), serviceDescriptor.ImplementationType);
         Assert.Equal(ServiceLifetime.Scoped, serviceDescriptor.Lifetime);
     }
 
@@ -70,14 +70,14 @@ public sealed class DependencyInjectionTests
         // Arrange
         var services = new ServiceCollection();
         var cqrsBuilder = new MediatorKitBuilder(services);
-        var behaviorType = typeof(TestPipelineBehavior<,>);
+        var behaviorType = typeof(TestRequestPipelineBehavior<,>);
 
         // Act
-        cqrsBuilder.AddPipelineBehavior(behaviorType);
+        cqrsBuilder.AddRequestPipelineBehavior(behaviorType);
 
         // Assert
         var serviceDescriptor = services.FirstOrDefault(s =>
-            s.ServiceType == typeof(IPipelineBehavior<,>));
+            s.ServiceType == typeof(IRequestPipelineBehavior<,>));
         Assert.NotNull(serviceDescriptor);
         Assert.Equal(behaviorType, serviceDescriptor.ImplementationType);
         Assert.Equal(ServiceLifetime.Scoped, serviceDescriptor.Lifetime);
@@ -93,7 +93,7 @@ public sealed class DependencyInjectionTests
 
         // Act & Assert
         var exception = Assert.Throws<ArgumentException>(() =>
-            cqrsBuilder.AddPipelineBehavior(nonGenericType));
+            cqrsBuilder.AddRequestPipelineBehavior(nonGenericType));
         Assert.Equal("Behavior must be an open generic type, e.g. typeof(LoggingBehavior<,>)", exception.Message);
     }
 
@@ -106,7 +106,7 @@ public sealed class DependencyInjectionTests
         var invalidType = typeof(List<>);
 
         // Act & Assert
-        var exception = Assert.Throws<ArgumentException>(() => cqrsBuilder.AddPipelineBehavior(invalidType));
+        var exception = Assert.Throws<ArgumentException>(() => cqrsBuilder.AddRequestPipelineBehavior(invalidType));
         Assert.Equal("Behavior type must implement IPipelineBehavior<,> (Parameter 'behaviorType')", exception.Message);
     }
 
@@ -118,7 +118,7 @@ public sealed class DependencyInjectionTests
         var cqrsBuilder = new MediatorKitBuilder(services);
 
         // Act
-        cqrsBuilder.AddHandlers<TestRequestHandler>();
+        cqrsBuilder.AddRequestHandlers<TestRequestHandler>();
 
         // Assert
         var requestHandler = services
@@ -134,7 +134,7 @@ public sealed class DependencyInjectionTests
         // Arrange
         var services = new ServiceCollection();
 
-        services.AddMediatorKit(mediator => { mediator.AddHandlers<TestRequestHandler>(); });
+        services.AddMediatorKit(mediator => { mediator.AddRequestHandlers<TestRequestHandler>(); });
 
         var provider = services.BuildServiceProvider();
         var sender = provider.GetRequiredService<ISender>();

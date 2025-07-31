@@ -1,9 +1,9 @@
 using Coderynx.MediatorKit.Abstractions;
 
-namespace Coderynx.CqrsKit.Tests;
+namespace Coderynx.CqrsKit.Tests.RequestTests;
 
-public class GenericTrackingBehavior<TRequest, TResponse>
-    : IPipelineBehavior<TRequest, TResponse>
+public class GenericTrackingRequestBehavior<TRequest, TResponse>
+    : IRequestPipelineBehavior<TRequest, TResponse>
     where TRequest : IRequest<TResponse>
 {
     // ReSharper disable once StaticMemberInGenericType

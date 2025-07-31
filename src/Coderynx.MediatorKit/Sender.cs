@@ -23,7 +23,7 @@ public sealed class Sender(IServiceProvider serviceProvider) : ISender
                 .GetMethod("HandleAsync")!
                 .Invoke(handler, [request, cancellationToken])!;
 
-        var behaviorType = typeof(IPipelineBehavior<,>).MakeGenericType(requestType, typeof(TResponse));
+        var behaviorType = typeof(IRequestPipelineBehavior<,>).MakeGenericType(requestType, typeof(TResponse));
         var behaviors = serviceProvider
             .GetServices(behaviorType)
             .Reverse()

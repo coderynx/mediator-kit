@@ -27,7 +27,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Coderynx.MediatorKit.Abstractions\Coderynx.MediatorKit.Abstractions.csproj" />
+        <ProjectReference Include="..\Coderynx.MediatorKit.Abstractions\Coderynx.MediatorKit.Abstractions.csproj"/>
     </ItemGroup>
 
 </Project>
