@@ -1,6 +1,6 @@
 namespace Coderynx.MediatorKit.Abstractions;
 
-public interface IPipelineBehavior<in TRequest, TResponse>
+public interface IRequestPipelineBehavior<in TRequest, TResponse>
     where TRequest : IRequest<TResponse>
 {
     Task<TResponse> HandleAsync(

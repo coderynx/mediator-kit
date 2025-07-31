@@ -51,7 +51,8 @@ Install-Package Coderynx.MediatorKit
 
 This project uses automated versioning and releases:
 
-1. **Versioning**: Uses [Nerdbank.GitVersioning](https://github.com/dotnet/Nerdbank.GitVersioning) for automatic version management
+1. **Versioning**: Uses [Nerdbank.GitVersioning](https://github.com/dotnet/Nerdbank.GitVersioning) for automatic version
+   management
 2. **CI/CD**: GitHub Actions workflows handle building, testing, and publishing
 3. **Releases**: Created automatically when version tags are pushed
 
@@ -77,14 +78,15 @@ This project uses automated versioning and releases:
    git push origin v1.4.1
    ```
 3. The release workflow will automatically:
-   - Build and test the code
-   - Create NuGet packages
-   - Create a GitHub release
-   - Publish packages to NuGet.org
+    - Build and test the code
+    - Create NuGet packages
+    - Create a GitHub release
+    - Publish packages to NuGet.org
 
 ### Security
 
 The automation uses the following secrets:
+
 - `NUGET_API_KEY`: API key for publishing to NuGet.org
 
 Make sure these are properly configured in your GitHub repository settings.

@@ -2,7 +2,7 @@ using Coderynx.MediatorKit;
 using Coderynx.MediatorKit.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Coderynx.CqrsKit.Tests;
+namespace Coderynx.CqrsKit.Tests.RequestTests;
 
 public class SenderTests
 {
@@ -12,7 +12,7 @@ public class SenderTests
     {
         var services = new ServiceCollection();
         services.AddTransient<IRequestHandler<TestRequest, int>, TestRequestHandler>();
-        services.AddTransient<IPipelineBehavior<IRequest<int>, int>, LoggingBehavior>();
+        services.AddTransient<IRequestPipelineBehavior<IRequest<int>, int>, RequestLoggingBehavior>();
 
         _provider = services.BuildServiceProvider();
     }
@@ -38,8 +38,11 @@ public class SenderTests
         var sender = new Sender(emptyProvider);
 
         // Act & Assert
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => sender.SendAsync(new TestRequest()));
-        Assert.Contains("No handler found for request of type 'Coderynx.CqrsKit.Tests.TestRequest'", ex.Message);
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => sender.SendAsync(new TestRequest()));
+
+        Assert.Contains(
+            "No handler found for request of type 'Coderynx.CqrsKit.Tests.RequestTests.TestRequest'",
+            exception.Message);
     }
 
     [Fact]
@@ -48,7 +51,7 @@ public class SenderTests
         // Arrange
         var services = new ServiceCollection();
         services.AddTransient<IRequestHandler<TestRequest, int>, TestRequestHandler>();
-        services.AddSingleton(typeof(IPipelineBehavior<,>), typeof(TrackingBehavior<,>));
+        services.AddSingleton(typeof(IRequestPipelineBehavior<,>), typeof(RequestTrackingBehavior<,>));
 
         var provider = services.BuildServiceProvider();
         var sender = new Sender(provider);
@@ -58,7 +61,7 @@ public class SenderTests
 
         // Assert
         Assert.Equal(1, result);
-        Assert.True(TrackingBehavior<TestRequest, int>.WasCalled);
+        Assert.True(RequestTrackingBehavior<TestRequest, int>.WasCalled);
     }
 
     [Fact]
@@ -67,7 +70,7 @@ public class SenderTests
         // Arrange
         var services = new ServiceCollection();
         services.AddTransient<IRequestHandler<TestRequest, int>, TestRequestHandler>();
-        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(GenericTrackingBehavior<,>));
+        services.AddTransient(typeof(IRequestPipelineBehavior<,>), typeof(GenericTrackingRequestBehavior<,>));
 
         var provider = services.BuildServiceProvider();
         var sender = new Sender(provider);
@@ -77,6 +80,6 @@ public class SenderTests
 
         // Assert
         Assert.Equal(1, result);
-        Assert.True(GenericTrackingBehavior<TestRequest, int>.WasCalled);
+        Assert.True(GenericTrackingRequestBehavior<TestRequest, int>.WasCalled);
     }
 }

@@ -1,6 +1,6 @@
 using Coderynx.MediatorKit.Abstractions;
 
-namespace Coderynx.CqrsKit.Tests;
+namespace Coderynx.CqrsKit.Tests.RequestTests;
 
 public sealed class TestRequest : IRequest<int>;
 
