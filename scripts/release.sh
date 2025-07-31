@@ -49,13 +49,13 @@ create_release() {
     # Update version based on release type
     case $release_type in
         "major")
-            nbgv prepare-release --tag
+            nbgv prepare-release
             ;;
         "minor")
-            nbgv prepare-release --tag
+            nbgv prepare-release
             ;;
         "patch")
-            nbgv prepare-release --tag
+            nbgv prepare-release
             ;;
         *)
             print_error "Invalid release type. Use: major, minor, or patch"
