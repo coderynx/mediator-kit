@@ -1,0 +1,182 @@
+name: Multi-Project Release Workflow
+
+on:
+  workflow_call:
+    inputs:
+      dotnet-version:
+        description: '.NET version to use'
+        required: false
+        type: string
+        default: '9.x'
+      projects:
+        description: 'JSON array of project paths relative to repo root'
+        required: false
+        type: string
+        default: '["./"]'
+      tag-prefix:
+        description: 'Prefix for tags (leave empty for no prefix)'
+        required: false
+        type: string
+        default: ''
+      nuget-source:
+        description: 'NuGet source URL'
+        required: false
+        type: string
+        default: 'https://api.nuget.org/v3/index.json'
+      run-tests:
+        description: 'Whether to run tests'
+        required: false
+        type: boolean
+        default: true
+    secrets:
+      NUGET_API_KEY:
+        description: 'NuGet API key'
+        required: true
+
+env:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+  DOTNET_NOLOGO: true
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: release-${{ steps.project-info.outputs.name }}-${{ github.sha }}
+      cancel-in-progress: false
+    strategy:
+      matrix:
+        project: ${{ fromJSON(inputs.projects) }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ inputs.dotnet-version }}
+
+      - name: Install GitVersioning
+        run: dotnet tool install --global nbgv
+
+      - name: Determine project info
+        id: project-info
+        run: |
+          PROJECT_PATH="${{ matrix.project }}"
+          
+          # Normalize path
+          if [[ "$PROJECT_PATH" == "./" ]]; then
+            PROJECT_PATH="."
+            PROJECT_NAME=""
+          else
+            PROJECT_NAME=$(basename "$PROJECT_PATH")
+          fi
+          
+          echo "path=$PROJECT_PATH" >> $GITHUB_OUTPUT
+          echo "name=$PROJECT_NAME" >> $GITHUB_OUTPUT
+
+      - name: Get version from nbgv
+        id: version
+        run: |
+          cd "${{ steps.project-info.outputs.path }}"
+          echo "version=$(nbgv get-version -v NuGetPackageVersion)" >> $GITHUB_OUTPUT
+          echo "semver=$(nbgv get-version -v SemVer2)" >> $GITHUB_OUTPUT
+
+      - name: Generate tag name
+        id: tag
+        run: |
+          TAG_PREFIX="${{ inputs.tag-prefix }}"
+          PROJECT_NAME="${{ steps.project-info.outputs.name }}"
+          SEMVER="${{ steps.version.outputs.semver }}"
+          
+          if [[ -n "$TAG_PREFIX" && -n "$PROJECT_NAME" ]]; then
+            TAG_NAME="${TAG_PREFIX}${PROJECT_NAME}-v${SEMVER}"
+          elif [[ -n "$TAG_PREFIX" ]]; then
+            TAG_NAME="${TAG_PREFIX}v${SEMVER}"
+          elif [[ -n "$PROJECT_NAME" ]]; then
+            TAG_NAME="${PROJECT_NAME}-v${SEMVER}"
+          else
+            TAG_NAME="v${SEMVER}"
+          fi
+          
+          echo "name=$TAG_NAME" >> $GITHUB_OUTPUT
+
+      - name: Check if tag exists
+        id: check_tag
+        run: |
+          if git rev-parse "${{ steps.tag.outputs.name }}" >/dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create and push tag
+        if: steps.check_tag.outputs.exists == 'false'
+        run: |
+          git config --local user.name "GitHub Actions"
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "${{ steps.tag.outputs.name }}"
+          git push origin "${{ steps.tag.outputs.name }}"
+
+      - name: Restore dependencies
+        if: steps.check_tag.outputs.exists == 'false'
+        run: dotnet restore "${{ steps.project-info.outputs.path }}"
+
+      - name: Build
+        if: steps.check_tag.outputs.exists == 'false'
+        run: dotnet build "${{ steps.project-info.outputs.path }}" --configuration Release --no-restore
+
+      - name: Test
+        if: steps.check_tag.outputs.exists == 'false' && inputs.run-tests
+        run: dotnet test "${{ steps.project-info.outputs.path }}" --configuration Release --no-build --verbosity normal
+
+      - name: Pack
+        if: steps.check_tag.outputs.exists == 'false'
+        run: |
+          OUTPUT_DIR="./nupkg-${{ steps.project-info.outputs.name || 'main' }}"
+          dotnet pack "${{ steps.project-info.outputs.path }}" --configuration Release --no-build --output "$OUTPUT_DIR"
+
+      - name: Generate changelog
+        if: steps.check_tag.outputs.exists == 'false'
+        run: |
+          PROJECT_NAME="${{ steps.project-info.outputs.name }}"
+          SEMVER="${{ steps.version.outputs.semver }}"
+          
+          CHANGELOG_FILE="release-notes-${PROJECT_NAME:-main}.md"
+          
+          if [ -f CHANGELOG.md ]; then
+            awk "/^## \[?${SEMVER}\]?/{flag=1; next} /^## /{flag=0} flag" CHANGELOG.md > "$CHANGELOG_FILE"
+          else
+            echo "## Changes in ${SEMVER}" > "$CHANGELOG_FILE"
+            echo "" >> "$CHANGELOG_FILE"
+            # Use project-specific tag prefix for filtering
+            TAG_PREFIX="${{ inputs.tag-prefix }}"
+            if [ -n "$TAG_PREFIX" ]; then
+              PREV_TAG=$(git describe --tags --abbrev=0 --match "${TAG_PREFIX}*" HEAD~1 2>/dev/null || echo "")
+            else
+              PREV_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
+            fi
+            if [ -n "$PREV_TAG" ]; then
+              git log --pretty=format:"- %s" "$PREV_TAG"..HEAD >> "$CHANGELOG_FILE"
+            else
+              echo "- Initial release" >> "$CHANGELOG_FILE"
+            fi
+          fi
+
+      - name: Create GitHub Release
+        if: steps.check_tag.outputs.exists == 'false'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.name }}
+          name: ${{ steps.project-info.outputs.name && format('{0} Release {1}', steps.project-info.outputs.name, steps.version.outputs.semver) || format('Release {0}', steps.version.outputs.semver) }}
+          body_path: release-notes-${{ steps.project-info.outputs.name || 'main' }}.md
+          files: ./nupkg-${{ steps.project-info.outputs.name || 'main' }}/*
+          draft: false
+          prerelease: ${{ contains(steps.version.outputs.version, '-') }}
+
+      - name: Publish to NuGet
+        if: steps.check_tag.outputs.exists == 'false'
+        run: |
+          dotnet nuget push "$OUTPUT_DIR/*.nupkg" -k ${{ secrets.NUGET_API_KEY }} -s ${{ inputs.nuget-source }} --skip-duplicate
