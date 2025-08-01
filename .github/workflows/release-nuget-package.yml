@@ -1,12 +1,27 @@
-name: Release
+name: Release NuGet Package
+
+on:
+  workflow_call:
+    inputs:
+      project-path:
+        description: 'Path to the project directory'
+        required: true
+        type: string
+      project-name:
+        description: 'Name of the project for artifacts'
+        required: true
+        type: string
+      dotnet-version:
+        description: '.NET version to use'
+        required: false
+        type: string
+        default: '9.x'
+    secrets:
+      NUGET_API_KEY:
+        required: true
 
 permissions:
   contents: write
-
-on:
-  push:
-    branches: [ 'main' ]
-  workflow_dispatch:
 
 env:
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
@@ -29,13 +44,14 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 9.x
+          dotnet-version: ${{ inputs.dotnet-version }}
 
       - name: Install GitVersioning
         run: dotnet tool install --global nbgv
 
       - name: Get version from nbgv
         id: version
+        working-directory: ${{ inputs.project-path }}
         run: |
           echo "version=$(nbgv get-version -v NuGetPackageVersion)" >> $GITHUB_OUTPUT
           echo "semver=$(nbgv get-version -v SemVer2)" >> $GITHUB_OUTPUT
@@ -43,7 +59,7 @@ jobs:
       - name: Check if tag exists
         id: check_tag
         run: |
-          if git rev-parse "v${{ steps.version.outputs.semver }}" >/dev/null 2>&1; then
+          if git rev-parse "${{ inputs.project-name }}-v${{ steps.version.outputs.semver }}" >/dev/null 2>&1; then
             echo "exists=true" >> $GITHUB_OUTPUT
           else
             echo "exists=false" >> $GITHUB_OUTPUT
@@ -53,34 +69,35 @@ jobs:
         if: steps.check_tag.outputs.exists == 'false'
         run: |
           git config --local user.name "GitHub Actions"
-          git tag "v${{ steps.version.outputs.semver }}"
-          git push origin "v${{ steps.version.outputs.semver }}"
+          git tag "${{ inputs.project-name }}-v${{ steps.version.outputs.semver }}"
+          git push origin "${{ inputs.project-name }}-v${{ steps.version.outputs.semver }}"
 
       - name: Restore dependencies
         if: steps.check_tag.outputs.exists == 'false'
-        run: |
-          dotnet restore
+        working-directory: ${{ inputs.project-path }}
+        run: dotnet restore
 
       - name: Build
         if: steps.check_tag.outputs.exists == 'false'
-        run: |
-          dotnet build --configuration Release --no-restore
+        working-directory: ${{ inputs.project-path }}
+        run: dotnet build --configuration Release --no-restore
 
       - name: Test
         if: steps.check_tag.outputs.exists == 'false'
+        working-directory: ${{ inputs.project-path }}
         run: dotnet test --configuration Release --no-build --verbosity normal
 
       - name: Pack
         if: steps.check_tag.outputs.exists == 'false'
-        run: |
-          dotnet pack --configuration Release --no-build --output ./nupkg
+        working-directory: ${{ inputs.project-path }}
+        run: dotnet pack --configuration Release --no-build --output ./nupkg
 
       - name: Generate changelog
         if: steps.check_tag.outputs.exists == 'false'
         id: changelog
+        working-directory: ${{ inputs.project-path }}
         run: |
           if [ -f CHANGELOG.md ]; then
-            # Extract changelog for this version
             awk "/^## \[?${{ steps.version.outputs.semver }}\]?/{flag=1; next} /^## /{flag=0} flag" CHANGELOG.md > release-notes.md
           else
             echo "## Changes in ${{ steps.version.outputs.semver }}" > release-notes.md
@@ -92,22 +109,23 @@ jobs:
         if: steps.check_tag.outputs.exists == 'false'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ steps.version.outputs.semver }}
-          name: Release ${{ steps.version.outputs.semver }}
-          body_path: release-notes.md
+          tag_name: ${{ inputs.project-name }}-v${{ steps.version.outputs.semver }}
+          name: ${{ inputs.project-name }} Release ${{ steps.version.outputs.semver }}
+          body_path: ${{ inputs.project-path }}/release-notes.md
           files: |
-            ./nupkg/*.nupkg
-            ./nupkg/*.snupkg
+            ${{ inputs.project-path }}/nupkg/*.nupkg
+            ${{ inputs.project-path }}/nupkg/*.snupkg
           draft: false
           prerelease: ${{ contains(steps.version.outputs.version, '-') }}
 
       - name: Publish to NuGet
         if: steps.check_tag.outputs.exists == 'false'
+        working-directory: ${{ inputs.project-path }}
         run: dotnet nuget push ./nupkg/*.nupkg -k ${{ secrets.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json --skip-duplicate
 
       - name: Upload packages as artifacts
         if: steps.check_tag.outputs.exists == 'false'
         uses: actions/upload-artifact@v4
         with:
-          name: release-packages-${{ steps.version.outputs.version }}
-          path: ./nupkg/*
+          name: release-packages-${{ inputs.project-name }}-${{ steps.version.outputs.version }}
+          path: ${{ inputs.project-path }}/nupkg/*

@@ -1,0 +1,25 @@
+name: Release MyLib
+
+on:
+  push:
+    branches: [ 'main' ]
+  
+  workflow_dispatch:
+
+jobs:
+  
+  release:
+    uses: ./.github/workflows/release-nuget-package.yml
+    with:
+      project-path: ${{ matrix.project-path }}
+      project-name: ${{ matrix.project-name }}
+      dotnet-version: '9.x'
+    secrets:
+      NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+    strategy:
+      matrix:
+        include:
+          - project-path: 'src/Coderynx.MediatorKit.Abstractions'
+            project-name: 'abstractions'
+          - project-path: 'src/Coderynx.MediatorKit'
+            project-name: 'implementation'
