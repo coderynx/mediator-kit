@@ -40,6 +40,9 @@ env:
 jobs:
   release:
     runs-on: ubuntu-latest
+    concurrency:
+      group: release-${{ matrix.project }}-${{ steps.version.outputs.version }}
+      cancel-in-progress: false
     strategy:
       matrix:
         project: ${{ fromJSON(inputs.projects) }}
