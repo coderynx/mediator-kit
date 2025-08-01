@@ -11,5 +11,3 @@ reducing tight coupling.
 - Simple and intuitive mediator pattern implementation
 - Dependency injection ready
 - Extensible pipeline behaviors for cross-cutting concerns
-- Automated versioning and release process
-- Comprehensive CI/CD pipeline
