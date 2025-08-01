@@ -9,9 +9,5 @@
     "buildNumber": {
       "enabled": true
     }
-  },
-  "release": {
-    "branchName": "v{version}",
-    "firstUnstableTag": "alpha"
   }
 }
