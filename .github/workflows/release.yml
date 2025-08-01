@@ -1,4 +1,4 @@
-name: Release MyLib
+name: Release NuGet Packages
 
 permissions:
   contents: write
