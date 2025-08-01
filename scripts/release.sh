@@ -118,8 +118,7 @@ create_packages() {
     rm -rf ./nupkg
     mkdir -p ./nupkg
     
-    dotnet pack src/Coderynx.MediatorKit.Abstractions/Coderynx.MediatorKit.Abstractions.csproj --configuration Release --output ./nupkg
-    dotnet pack src/Coderynx.MediatorKit/Coderynx.MediatorKit.csproj --configuration Release --output ./nupkg
+    dotnet pack --configuration Release --output ./nupkg
     
     print_info "Packages created in ./nupkg/:"
     ls -la ./nupkg/
