@@ -41,7 +41,7 @@ jobs:
   release:
     runs-on: ubuntu-latest
     concurrency:
-      group: release-${{ matrix.project }}-${{ github.sha }}
+      group: release-${{ steps.project-info.outputs.name }}-${{ github.sha }}
       cancel-in-progress: false
     strategy:
       matrix:
