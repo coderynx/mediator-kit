@@ -3,9 +3,6 @@ name: Release
 permissions:
   contents: write
 
-env:
-  DEFAULT_PROJECTS: '["./src/Coderynx.MediatorKit.Abstractions", "./src/Coderynx.MediatorKit"]'
-
 on:
   push:
     branches:
@@ -20,6 +17,6 @@ jobs:
   release:
     uses: ./.github/workflows/multi-release.yml
     with:
-      projects: ${{ inputs.projects || env.DEFAULT_PROJECTS }}
+      projects: ${{ inputs.projects || '["./src/Coderynx.MediatorKit.Abstractions", "./src/Coderynx.MediatorKit"]' }}
     secrets:
       NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
