@@ -5,14 +5,8 @@ permissions:
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches: [ 'main' ]
   workflow_dispatch:
-    inputs:
-      version:
-        description: 'Release version (e.g., v1.4.0)'
-        required: true
-        type: string
 
 env:
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
@@ -24,12 +18,13 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
       semver: ${{ steps.version.outputs.semver }}
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Required for GitVersioning
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -39,33 +34,49 @@ jobs:
       - name: Install GitVersioning
         run: dotnet tool install --global nbgv
 
-      - name: Get version
+      - name: Get version from nbgv
         id: version
         run: |
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
-            echo "semver=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          echo "version=$(nbgv get-version -v NuGetPackageVersion)" >> $GITHUB_OUTPUT
+          echo "semver=$(nbgv get-version -v SemVer2)" >> $GITHUB_OUTPUT
+
+      - name: Check if tag exists
+        id: check_tag
+        run: |
+          if git rev-parse "v${{ steps.version.outputs.semver }}" >/dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
           else
-            echo "version=$(nbgv get-version -v NuGetPackageVersion)" >> $GITHUB_OUTPUT
-            echo "semver=$(nbgv get-version -v SemVer2)" >> $GITHUB_OUTPUT
+            echo "exists=false" >> $GITHUB_OUTPUT
           fi
 
+      - name: Create and push tag
+        if: steps.check_tag.outputs.exists == 'false'
+        run: |
+          git config --local user.name "GitHub Actions"
+          git tag "v${{ steps.version.outputs.semver }}"
+          git push origin "v${{ steps.version.outputs.semver }}"
+
       - name: Restore dependencies
+        if: steps.check_tag.outputs.exists == 'false'
         run: |
           dotnet restore
 
       - name: Build
+        if: steps.check_tag.outputs.exists == 'false'
         run: |
           dotnet build --configuration Release --no-restore
 
       - name: Test
+        if: steps.check_tag.outputs.exists == 'false'
         run: dotnet test --configuration Release --no-build --verbosity normal
 
       - name: Pack
+        if: steps.check_tag.outputs.exists == 'false'
         run: |
           dotnet pack --configuration Release --no-build --output ./nupkg
 
       - name: Generate changelog
+        if: steps.check_tag.outputs.exists == 'false'
         id: changelog
         run: |
           if [ -f CHANGELOG.md ]; then
@@ -78,9 +89,10 @@ jobs:
           fi
 
       - name: Create GitHub Release
+        if: steps.check_tag.outputs.exists == 'false'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name || steps.version.outputs.semver }}
+          tag_name: v${{ steps.version.outputs.semver }}
           name: Release ${{ steps.version.outputs.semver }}
           body_path: release-notes.md
           files: |
@@ -90,9 +102,11 @@ jobs:
           prerelease: ${{ contains(steps.version.outputs.version, '-') }}
 
       - name: Publish to NuGet
+        if: steps.check_tag.outputs.exists == 'false'
         run: dotnet nuget push ./nupkg/*.nupkg -k ${{ secrets.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json --skip-duplicate
 
       - name: Upload packages as artifacts
+        if: steps.check_tag.outputs.exists == 'false'
         uses: actions/upload-artifact@v4
         with:
           name: release-packages-${{ steps.version.outputs.version }}
