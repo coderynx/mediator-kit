@@ -19,7 +19,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <InternalsVisibleTo Include="Coderynx.CqrsKit.Tests"/>
+        <InternalsVisibleTo Include="Coderynx.MediatorKit.Tests"/>
     </ItemGroup>
 
     <ItemGroup>

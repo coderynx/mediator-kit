@@ -1,6 +1,6 @@
 using Coderynx.MediatorKit.Abstractions;
 
-namespace Coderynx.CqrsKit.Tests.NotificationTests;
+namespace Coderynx.MediatorKit.Tests.NotificationTests;
 
 public sealed class NotificationLoggingBehavior : INotificationPipelineBehavior<INotification>
 {

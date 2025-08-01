@@ -2,7 +2,7 @@ using Coderynx.MediatorKit;
 using Coderynx.MediatorKit.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Coderynx.CqrsKit.Tests.RequestTests;
+namespace Coderynx.MediatorKit.Tests.RequestTests;
 
 public class SenderTests
 {
@@ -41,7 +41,7 @@ public class SenderTests
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => sender.SendAsync(new TestRequest()));
 
         Assert.Contains(
-            "No handler found for request of type 'Coderynx.CqrsKit.Tests.RequestTests.TestRequest'",
+            "No handler found for request of type 'Coderynx.MediatorKit.Tests.RequestTests.TestRequest'",
             exception.Message);
     }
 

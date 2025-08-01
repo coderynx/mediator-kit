@@ -2,7 +2,7 @@ using Coderynx.MediatorKit;
 using Coderynx.MediatorKit.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Coderynx.CqrsKit.Tests.NotificationTests;
+namespace Coderynx.MediatorKit.Tests.NotificationTests;
 
 public class PublisherTests
 {
@@ -39,7 +39,7 @@ public class PublisherTests
             publisher.PublishAsync(new TestNotification()));
 
         Assert.Contains(
-            "No handler found for notification of type 'Coderynx.CqrsKit.Tests.NotificationTests.TestNotification'",
+            "No handler found for notification of type 'Coderynx.MediatorKit.Tests.NotificationTests.TestNotification'",
             exception.Message);
     }
 

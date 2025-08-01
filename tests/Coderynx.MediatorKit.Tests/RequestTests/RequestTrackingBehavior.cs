@@ -1,6 +1,6 @@
 using Coderynx.MediatorKit.Abstractions;
 
-namespace Coderynx.CqrsKit.Tests.RequestTests;
+namespace Coderynx.MediatorKit.Tests.RequestTests;
 
 public class RequestTrackingBehavior<TRequest, TResponse> : IRequestPipelineBehavior<TRequest, TResponse>
     where TRequest : IRequest<TResponse>

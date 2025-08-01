@@ -1,10 +1,9 @@
 <Solution>
-    <Folder Name="/src/">
-        <Project Path="src\Coderynx.MediatorKit.Abstractions\Coderynx.MediatorKit.Abstractions.csproj"
-                 Type="Classic C#"/>
-        <Project Path="src\Coderynx.MediatorKit\Coderynx.MediatorKit.csproj"/>
-    </Folder>
-    <Folder Name="/tests/">
-        <Project Path="tests\Coderynx.CqrsKit.Tests\Coderynx.CqrsKit.Tests.csproj" Type="Classic C#"/>
-    </Folder>
+  <Folder Name="/src/">
+    <Project Path="src\Coderynx.MediatorKit.Abstractions\Coderynx.MediatorKit.Abstractions.csproj" Type="Classic C#" />
+    <Project Path="src\Coderynx.MediatorKit\Coderynx.MediatorKit.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests\Coderynx.MediatorKit.Tests\Coderynx.MediatorKit.Tests.csproj" Type="Classic C#" />
+  </Folder>
 </Solution>
