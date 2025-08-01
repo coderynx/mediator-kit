@@ -60,8 +60,7 @@ jobs:
 
       - name: Pack
         run: |
-          dotnet pack src/Coderynx.MediatorKit.Abstractions/Coderynx.MediatorKit.Abstractions.csproj --configuration Release --no-build --output ./nupkg
-          dotnet pack src/Coderynx.MediatorKit/Coderynx.MediatorKit.csproj --configuration Release --no-build --output ./nupkg
+          dotnet pack --configuration Release --no-build --output ./nupkg
 
       - name: Generate changelog
         id: changelog
