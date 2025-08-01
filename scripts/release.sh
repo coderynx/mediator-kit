@@ -80,7 +80,9 @@ create_release() {
     
     print_info "Created tag: $tag_name"
     print_info "Push the tag to trigger the release workflow:"
+    
     print_info "git push origin $tag_name"
+    git push origin "$tag_name"
 }
 
 # Function to show current status
