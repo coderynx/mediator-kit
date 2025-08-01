@@ -179,5 +179,4 @@ jobs:
       - name: Publish to NuGet
         if: steps.check_tag.outputs.exists == 'false'
         run: |
-          OUTPUT_DIR="./nupkg-${{ steps.project-info.outputs.name || 'main' }}"
           dotnet nuget push "$OUTPUT_DIR/*.nupkg" -k ${{ secrets.NUGET_API_KEY }} -s ${{ inputs.nuget-source }} --skip-duplicate
