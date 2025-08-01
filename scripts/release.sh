@@ -103,14 +103,9 @@ show_status() {
 build_and_test() {
     print_info "Building and testing locally..."
     
-    dotnet restore src/Coderynx.MediatorKit.Abstractions/Coderynx.MediatorKit.Abstractions.csproj
-    dotnet restore src/Coderynx.MediatorKit/Coderynx.MediatorKit.csproj
-    dotnet restore tests/Coderynx.CqrsKit.Tests/Coderynx.CqrsKit.Tests.csproj
-    
-    dotnet build src/Coderynx.MediatorKit.Abstractions/Coderynx.MediatorKit.Abstractions.csproj --configuration Release
-    dotnet build src/Coderynx.MediatorKit/Coderynx.MediatorKit.csproj --configuration Release
-    
-    dotnet test tests/Coderynx.CqrsKit.Tests/Coderynx.CqrsKit.Tests.csproj --configuration Release --verbosity normal
+    dotnet restore
+    dotnet build --configuration Release    
+    dotnet test --configuration Release --verbosity normal
     
     print_info "Build and tests completed successfully!"
 }
