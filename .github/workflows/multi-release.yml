@@ -151,7 +151,14 @@ jobs:
           else
             echo "## Changes in ${SEMVER}" > "$CHANGELOG_FILE"
             echo "" >> "$CHANGELOG_FILE"
-            git log --pretty=format:"- %s" $(git describe --tags --abbrev=0 HEAD~1)..HEAD >> "$CHANGELOG_FILE" 2>/dev/null || echo "- Initial release" >> "$CHANGELOG_FILE"
+            # Use project-specific tag prefix for filtering
+            TAG_PREFIX="${{ inputs.tag-prefix }}"
+            PREV_TAG=$(git describe --tags --abbrev=0 --match "${TAG_PREFIX}*" HEAD~1 2>/dev/null || echo "")
+            if [ -n "$PREV_TAG" ]; then
+              git log --pretty=format:"- %s" "$PREV_TAG"..HEAD >> "$CHANGELOG_FILE"
+            else
+              echo "- Initial release" >> "$CHANGELOG_FILE"
+            fi
           fi
 
       - name: Create GitHub Release
