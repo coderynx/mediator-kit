@@ -1,22 +1,25 @@
-name: Release
-
-permissions:
-  contents: write
+name: Release MyLib
 
 on:
   push:
-    branches:
-      - main
+    branches: [ 'main' ]
+  
   workflow_dispatch:
-    inputs:
-      projects:
-        description: 'Projects to release (JSON array)'
-        required: false
 
 jobs:
+  
   release:
-    uses: ./.github/workflows/multi-release.yml
+    uses: ./.github/workflows/release-nuget-package.yml
     with:
-      projects: ${{ inputs.projects || '["./src/Coderynx.MediatorKit.Abstractions", "./src/Coderynx.MediatorKit"]' }}
+      project-path: ${{ matrix.project-path }}
+      project-name: ${{ matrix.project-name }}
+      dotnet-version: '9.x'
     secrets:
       NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+    strategy:
+      matrix:
+        include:
+          - project-path: 'src/Coderynx.MediatorKit.Abstractions'
+            project-name: 'abstractions'
+          - project-path: 'src/Coderynx.MediatorKit'
+            project-name: 'implementation'
