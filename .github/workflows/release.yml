@@ -23,6 +23,6 @@ jobs:
       matrix:
         include:
           - project-path: 'src/Coderynx.MediatorKit.Abstractions'
-            project-name: 'abstractions'
+            project-name: 'Coderynx.MediatorKit.Abstractions'
           - project-path: 'src/Coderynx.MediatorKit'
-            project-name: 'implementation'
+            project-name: 'Coderynx.MediatorKit'
