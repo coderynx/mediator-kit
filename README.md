@@ -1,3 +1,6 @@
+[![Build](https://github.com/coderynx/mediator-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/coderynx/mediator-kit/actions/workflows/ci.yml)
+[![License](https://img.shields.io/github/license/coderynx/mediator-kit.svg)](https://github.com/coderynx/mediator-kit/blob/main/LICENSE)
+
 # MediatorKit
 
 ## Introduction
