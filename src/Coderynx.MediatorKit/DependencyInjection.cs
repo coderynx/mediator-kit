@@ -1,3 +1,4 @@
+using System.Reflection;
 using Coderynx.MediatorKit.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -29,7 +30,7 @@ public class MediatorKitBuilder
 
         var isInvalidBehavior = !behaviorType.GetInterfaces()
             .Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IRequestPipelineBehavior<,>));
-        
+
         if (isInvalidBehavior)
         {
             throw new ArgumentException(
@@ -42,7 +43,11 @@ public class MediatorKitBuilder
 
     public void AddRequestHandlers<T>()
     {
-        var assembly = typeof(T).Assembly;
+        AddRequestHandlersFromAssembly(typeof(T).Assembly);
+    }
+
+    public void AddRequestHandlersFromAssembly(Assembly assembly)
+    {
         var handlerInterface = typeof(IRequestHandler<,>);
 
         var handlers = assembly.GetTypes()
@@ -87,6 +92,21 @@ public class MediatorKitBuilder
     public void AddNotificationHandlers<T>()
     {
         var assembly = typeof(T).Assembly;
+        var handlerInterface = typeof(INotificationHandler<>);
+
+        var handlers = assembly.GetTypes()
+            .Where(t => t is { IsAbstract: false, IsInterface: false })
+            .SelectMany(t => t.GetInterfaces(), (t, i) => new { Type = t, Interface = i })
+            .Where(t => t.Interface.IsGenericType && t.Interface.GetGenericTypeDefinition() == handlerInterface);
+
+        foreach (var handler in handlers)
+        {
+            Services.AddScoped(handler.Interface, handler.Type);
+        }
+    }
+
+    public void AddNotificationHandlersFromAssembly(Assembly assembly)
+    {
         var handlerInterface = typeof(INotificationHandler<>);
 
         var handlers = assembly.GetTypes()

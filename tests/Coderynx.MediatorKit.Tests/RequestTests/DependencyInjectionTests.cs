@@ -1,4 +1,3 @@
-using Coderynx.MediatorKit;
 using Coderynx.MediatorKit.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -131,12 +130,51 @@ public sealed class DependencyInjectionTests
     }
 
     [Fact]
+    public void AddHandlersFromAssembly_ShouldRegisterRequestHandlers()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        var cqrsBuilder = new MediatorKitBuilder(services);
+
+        // Act
+        cqrsBuilder.AddRequestHandlersFromAssembly(typeof(TestRequestHandler).Assembly);
+
+        // Assert
+        var requestHandler = services
+            .FirstOrDefault(s => s.ServiceType == typeof(IRequestHandler<TestRequest, int>));
+        Assert.NotNull(requestHandler);
+        Assert.Equal(typeof(TestRequestHandler), requestHandler.ImplementationType);
+        Assert.Equal(ServiceLifetime.Scoped, requestHandler.Lifetime);
+    }
+
+    [Fact]
     public async Task SendAsync_ShouldReturnResult()
     {
         // Arrange
         var services = new ServiceCollection();
 
         services.AddMediatorKit(mediator => { mediator.AddRequestHandlers<TestRequestHandler>(); });
+
+        var provider = services.BuildServiceProvider();
+        var sender = provider.GetRequiredService<ISender>();
+
+        // Act
+        var result = await sender.SendAsync(new TestRequest());
+
+        // Assert
+        Assert.Equal(1, result);
+    }
+
+    [Fact]
+    public async Task SendAsync_ShouldReturnResult_WhenHandlersRegisteredFromAssembly()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+
+        services.AddMediatorKit(mediator =>
+        {
+            mediator.AddRequestHandlersFromAssembly(typeof(TestRequestHandler).Assembly);
+        });
 
         var provider = services.BuildServiceProvider();
         var sender = provider.GetRequiredService<ISender>();
