@@ -1,4 +1,3 @@
-using Coderynx.MediatorKit;
 using Coderynx.MediatorKit.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
 

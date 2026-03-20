@@ -1,4 +1,3 @@
-using Coderynx.MediatorKit;
 using Coderynx.MediatorKit.Abstractions;
 using Coderynx.MediatorKit.Tests.RequestTests;
 using Microsoft.Extensions.DependencyInjection;
@@ -118,6 +117,25 @@ public sealed class DependencyInjectionTests
     }
 
     [Fact]
+    public void AddHandlersFromAssembly_ShouldRegisterNotificationHandlers()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        var cqrsBuilder = new MediatorKitBuilder(services);
+
+        // Act
+        cqrsBuilder.AddNotificationHandlersFromAssembly(typeof(TestNotificationHandler).Assembly);
+
+        // Assert
+        var requestHandler = services
+            .FirstOrDefault(s => s.ServiceType == typeof(INotificationHandler<TestNotification>));
+
+        Assert.NotNull(requestHandler);
+        Assert.Equal(typeof(TestNotificationHandler), requestHandler.ImplementationType);
+        Assert.Equal(ServiceLifetime.Scoped, requestHandler.Lifetime);
+    }
+
+    [Fact]
     public async Task SendAsync_ShouldReturnResult()
     {
         // Arrange
@@ -130,5 +148,23 @@ public sealed class DependencyInjectionTests
 
         // Act
         await publisher.PublishAsync(new TestNotification());
+    }
+
+    [Fact]
+    public async Task SendAsync_ShouldReturnResult_WhenHandlersRegisteredFromAssembly()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+
+        services.AddMediatorKit(mediator =>
+        {
+            mediator.AddNotificationHandlersFromAssembly(typeof(TestNotificationHandler).Assembly);
+        });
+
+        var provider = services.BuildServiceProvider();
+        var sender = provider.GetRequiredService<IPublisher>();
+
+        // Act
+        await sender.PublishAsync(new TestNotification());
     }
 }
