@@ -23,10 +23,10 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Coderynx.MediatorKit.Abstractions" Version="1.7.0" />
-        <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.1" />
+        <PackageReference Include="Coderynx.MediatorKit.Abstractions" Version="1.7.0"/>
+        <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.1"/>
         <PackageReference Update="Nerdbank.GitVersioning">
-          <Version>3.9.50</Version>
+            <Version>3.9.50</Version>
         </PackageReference>
     </ItemGroup>
 

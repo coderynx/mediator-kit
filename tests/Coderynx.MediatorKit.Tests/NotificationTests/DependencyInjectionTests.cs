@@ -156,7 +156,8 @@ public sealed class DependencyInjectionTests
         // Arrange
         var services = new ServiceCollection();
 
-        services.AddMediatorKit(mediator => {
+        services.AddMediatorKit(mediator =>
+        {
             mediator.AddNotificationHandlersFromAssembly(typeof(TestNotificationHandler).Assembly);
         });
 
