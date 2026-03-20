@@ -26,6 +26,21 @@ public sealed class DependencyInjectionTests
     }
 
     [Fact]
+    public void AddMediatorKit_ShouldNotOverwriteSender_WhenAlreadyRegistered()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        services.AddScoped<ISender, CustomSender>();
+
+        // Act
+        services.AddMediatorKit();
+
+        // Assert
+        var serviceDescriptor = services.First(s => s.ServiceType == typeof(ISender));
+        Assert.Equal(typeof(CustomSender), serviceDescriptor.ImplementationType);
+    }
+
+    [Fact]
     public void AddMediatorKit_ShouldExecuteConfigureAction_WhenProvided()
     {
         // Arrange
@@ -148,6 +163,27 @@ public sealed class DependencyInjectionTests
     }
 
     [Fact]
+    public void AddMediatorKit_ShouldNotDuplicateRequestHandlers_WhenCalledMultipleTimes()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+
+        // Act
+        services.AddMediatorKit(mediator =>
+            mediator.AddRequestHandlersFromAssembly(typeof(TestRequestHandler).Assembly));
+        services.AddMediatorKit(mediator =>
+            mediator.AddRequestHandlersFromAssembly(typeof(TestRequestHandler).Assembly));
+
+        // Assert
+        var handlers = services
+            .Where(s => s.ServiceType == typeof(IRequestHandler<TestRequest, int>)
+                        && s.ImplementationType == typeof(TestRequestHandler))
+            .ToList();
+
+        Assert.Single(handlers);
+    }
+
+    [Fact]
     public async Task SendAsync_ShouldReturnResult()
     {
         // Arrange
@@ -184,5 +220,14 @@ public sealed class DependencyInjectionTests
 
         // Assert
         Assert.Equal(1, result);
+    }
+}
+
+internal sealed class CustomSender : ISender
+{
+    public Task<TResponse> SendAsync<TResponse>(IRequest<TResponse> request,
+        CancellationToken cancellationToken = new())
+    {
+        throw new NotImplementedException();
     }
 }
