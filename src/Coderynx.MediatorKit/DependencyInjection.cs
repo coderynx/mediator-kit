@@ -1,6 +1,7 @@
 using System.Reflection;
 using Coderynx.MediatorKit.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Coderynx.MediatorKit;
 
@@ -17,7 +18,8 @@ public class MediatorKitBuilder
         where TPipelineBehavior : class, IRequestPipelineBehavior<TRequest, TResponse>
         where TRequest : IRequest<TResponse>
     {
-        Services.AddScoped<IRequestPipelineBehavior<TRequest, TResponse>, TPipelineBehavior>();
+        Services.TryAddEnumerable(
+            ServiceDescriptor.Scoped<IRequestPipelineBehavior<TRequest, TResponse>, TPipelineBehavior>());
         return this;
     }
 
@@ -37,7 +39,7 @@ public class MediatorKitBuilder
                 "Behavior type must implement IRequestPipelineBehavior<,> (Parameter 'behaviorType')");
         }
 
-        Services.AddScoped(typeof(IRequestPipelineBehavior<,>), behaviorType);
+        Services.TryAddEnumerable(ServiceDescriptor.Scoped(typeof(IRequestPipelineBehavior<,>), behaviorType));
         return this;
     }
 
@@ -57,7 +59,7 @@ public class MediatorKitBuilder
 
         foreach (var handler in handlers)
         {
-            Services.AddScoped(handler.Interface, handler.Type);
+            Services.TryAddScoped(handler.Interface, handler.Type);
         }
     }
 
@@ -65,7 +67,8 @@ public class MediatorKitBuilder
         where TPipelineBehavior : class, INotificationPipelineBehavior<TNotification>
         where TNotification : INotification
     {
-        Services.AddScoped<INotificationPipelineBehavior<TNotification>, TPipelineBehavior>();
+        Services.TryAddEnumerable(
+            ServiceDescriptor.Scoped<INotificationPipelineBehavior<TNotification>, TPipelineBehavior>());
         return this;
     }
 
@@ -85,7 +88,7 @@ public class MediatorKitBuilder
                 "Behavior type must implement INotificationPipelineBehavior<> (Parameter 'behaviorType')");
         }
 
-        Services.AddScoped(typeof(INotificationPipelineBehavior<>), behaviorType);
+        Services.TryAddEnumerable(ServiceDescriptor.Scoped(typeof(INotificationPipelineBehavior<>), behaviorType));
         return this;
     }
 
@@ -101,7 +104,7 @@ public class MediatorKitBuilder
 
         foreach (var handler in handlers)
         {
-            Services.AddScoped(handler.Interface, handler.Type);
+            Services.TryAddEnumerable(ServiceDescriptor.Scoped(handler.Interface, handler.Type));
         }
     }
 
@@ -116,7 +119,7 @@ public class MediatorKitBuilder
 
         foreach (var handler in handlers)
         {
-            Services.AddScoped(handler.Interface, handler.Type);
+            Services.TryAddEnumerable(ServiceDescriptor.Scoped(handler.Interface, handler.Type));
         }
     }
 }
@@ -128,7 +131,7 @@ public static class DependencyInjection
         var builder = new MediatorKitBuilder(services);
         configure?.Invoke(builder);
 
-        services.AddScoped<ISender, Sender>();
-        services.AddScoped<IPublisher, Publisher>();
+        services.TryAddScoped<ISender, Sender>();
+        services.TryAddScoped<IPublisher, Publisher>();
     }
 }

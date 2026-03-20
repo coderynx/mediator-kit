@@ -27,6 +27,21 @@ public sealed class DependencyInjectionTests
     }
 
     [Fact]
+    public void AddMediatorKit_ShouldNotOverwritePublisher_WhenAlreadyRegistered()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        services.AddScoped<IPublisher, CustomPublisher>();
+
+        // Act
+        services.AddMediatorKit();
+
+        // Assert
+        var serviceDescriptor = services.First(s => s.ServiceType == typeof(IPublisher));
+        Assert.Equal(typeof(CustomPublisher), serviceDescriptor.ImplementationType);
+    }
+
+    [Fact]
     public void AddPipelineBehavior_Generic_ShouldRegisterBehavior()
     {
         // Arrange
@@ -136,6 +151,27 @@ public sealed class DependencyInjectionTests
     }
 
     [Fact]
+    public void AddMediatorKit_ShouldNotDuplicateNotificationHandlers_WhenCalledMultipleTimes()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+
+        // Act
+        services.AddMediatorKit(mediator =>
+            mediator.AddNotificationHandlersFromAssembly(typeof(TestNotificationHandler).Assembly));
+        services.AddMediatorKit(mediator =>
+            mediator.AddNotificationHandlersFromAssembly(typeof(TestNotificationHandler).Assembly));
+
+        // Assert
+        var handlers = services
+            .Where(s => s.ServiceType == typeof(INotificationHandler<TestNotification>)
+                        && s.ImplementationType == typeof(TestNotificationHandler))
+            .ToList();
+
+        Assert.Single(handlers);
+    }
+
+    [Fact]
     public async Task SendAsync_ShouldReturnResult()
     {
         // Arrange
@@ -166,5 +202,13 @@ public sealed class DependencyInjectionTests
 
         // Act
         await sender.PublishAsync(new TestNotification());
+    }
+}
+
+internal sealed class CustomPublisher : IPublisher
+{
+    public Task PublishAsync(INotification notification, CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
     }
 }
